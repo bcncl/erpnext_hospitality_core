@@ -119,96 +119,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Operational Reports",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "House List",
-   "link_count": 0,
-   "link_to": "House List",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "Hotel Reservation",
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Daily Arrivals",
-   "link_count": 0,
-   "link_to": "Daily Arrivals",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "Hotel Reservation",
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Daily Departures",
-   "link_count": 0,
-   "link_to": "Daily Departures",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "Hotel Reservation",
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Room Availability Report",
-   "link_count": 0,
-   "link_to": "Room Availability Report",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "Hotel Room",
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Maintenance & Logs",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Maintenance Log Report",
-   "link_count": 0,
-   "link_to": "Maintenance Log Report",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "Hotel Maintenance Request",
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Analytics",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Hotel Performance Analytics",
-   "link_count": 0,
-   "link_to": "Hotel Performance Analytics",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "Hotel Reservation",
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Financial Reports",
    "link_count": 7,
    "link_type": "DocType",
@@ -284,9 +194,98 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Operational Reports",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "House List",
+   "link_count": 0,
+   "link_to": "House List",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Daily Arrivals",
+   "link_count": 0,
+   "link_to": "Daily Arrivals",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Daily Departures",
+   "link_count": 0,
+   "link_to": "Daily Departures",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Hotel Reservation",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Room Availability Report",
+   "link_count": 0,
+   "link_to": "Room Availability Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Hotel Room",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Analytics",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Hotel Performance Analytics",
+   "link_count": 0,
+   "link_to": "Hotel Performance Analytics",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance & Logs",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Maintenance Log Report",
+   "link_count": 0,
+   "link_to": "Maintenance Log Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-12-20 02:04:06.031477",
+ "modified": "2025-12-20 05:21:14.969018",
  "modified_by": "braimahgifted@gmail.com",
  "module": "Hospitality Core",
  "name": "Hospitality",
