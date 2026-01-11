@@ -15,7 +15,8 @@ doc_events = {
         "on_trash": "hospitality_core.hospitality_core.api.folio.sync_folio_balance"
     },
     "POS Invoice": {
-        "on_submit": "hospitality_core.hospitality_core.api.pos_bridge.process_room_charge"
+        "on_submit": "hospitality_core.hospitality_core.api.pos_bridge.process_room_charge",
+        "on_cancel": "hospitality_core.hospitality_core.api.pos_bridge.void_room_charge"
     },
     "Payment Entry": {
         "on_submit": "hospitality_core.hospitality_core.api.payment_bridge.process_payment_entry"

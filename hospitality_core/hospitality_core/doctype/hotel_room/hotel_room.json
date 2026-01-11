@@ -10,6 +10,7 @@
         "room_number",
         "room_type",
         "floor",
+        "hotel_reception",
         "column_break_1",
         "status",
         "is_enabled",
@@ -34,6 +35,13 @@
             "fieldname": "floor",
             "fieldtype": "Data",
             "label": "Floor"
+        },
+        {
+            "fieldname": "hotel_reception",
+            "fieldtype": "Link",
+            "label": "Hotel Reception",
+            "options": "Hotel Reception",
+            "reqd": 1
         },
         {
             "fieldname": "column_break_1",

@@ -22,23 +22,33 @@ def sync_folio_balance(doc, method=None):
 
     # Aggregation Query
     # We filter out void transactions
+    # Separate Actual Payments from Discounts/Complimentary items
     totals = frappe.db.sql("""
         SELECT 
             SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as charges,
-            SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as payments
+            SUM(CASE 
+                WHEN amount < 0 AND item NOT IN ('DISCOUNT', 'COMPLIMENTARY') THEN ABS(amount) 
+                ELSE 0 END) as payments,
+            SUM(CASE 
+                WHEN amount < 0 AND item IN ('DISCOUNT', 'COMPLIMENTARY') THEN ABS(amount) 
+                ELSE 0 END) as discounts
         FROM `tabFolio Transaction`
         WHERE parent = %s AND is_void = 0
     """, (folio_name,), as_dict=True)[0]
 
     total_charges = totals.charges or 0.0
     total_payments = totals.payments or 0.0
-    outstanding = total_charges - total_payments
+    total_discounts = totals.discounts or 0.0
+    outstanding = total_charges - total_payments - total_discounts
+    excess_payment = abs(outstanding) if outstanding < -0.01 else 0.0
 
     # Direct DB update
     frappe.db.set_value("Guest Folio", folio_name, {
         "total_charges": total_charges,
         "total_payments": total_payments,
-        "outstanding_balance": outstanding
+        "total_discounts": total_discounts,
+        "outstanding_balance": outstanding,
+        "excess_payment": excess_payment
     })
     
     # Check Credit Limit if linked to Company
@@ -226,6 +236,9 @@ def move_transactions(transaction_names, target_folio):
     """
     Moves selected transactions from Source Folio to Target Folio.
     """
+    if not (frappe.has_role("Frontdesk Supervisor") or frappe.session.user == "Administrator"):
+        frappe.throw(_("Access Denied. Only Frontdesk Supervisors can move transactions."))
+
     if isinstance(transaction_names, str):
         import json
         transaction_names = json.loads(transaction_names)
@@ -285,6 +298,7 @@ def debug_folio_totals(folio_name):
         "doc_fields": {
             "total_charges": doc.total_charges,
             "total_payments": doc.total_payments,
+            "total_discounts": doc.total_discounts,
             "outstanding_balance": doc.outstanding_balance
         },
         "transactions": txns

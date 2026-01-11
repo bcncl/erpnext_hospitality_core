@@ -1,94 +1,116 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "field:group_name",
- "creation": "2025-01-28 11:40:00.000000",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "group_name",
-  "master_payer",
-  "status",
-  "column_break_1",
-  "arrival_date",
-  "departure_date",
-  "master_folio"
- ],
- "fields": [
-  {
-   "fieldname": "group_name",
-   "fieldtype": "Data",
-   "label": "Group Name",
-   "reqd": 1,
-   "unique": 1,
-   "description": "e.g., 'Smith Wedding 2025' or 'TechConf Delegates'"
-  },
-  {
-   "fieldname": "master_payer",
-   "fieldtype": "Link",
-   "label": "Master Payer (Customer)",
-   "options": "Customer",
-   "description": "The Company/Person responsible for the Master Folio."
-  },
-  {
-   "default": "Tentative",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Tentative\nConfirmed\nIn House\nChecked Out\nCancelled",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_1",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "arrival_date",
-   "fieldtype": "Date",
-   "label": "Arrival Date"
-  },
-  {
-   "fieldname": "departure_date",
-   "fieldtype": "Date",
-   "label": "Departure Date"
-  },
-  {
-   "fieldname": "master_folio",
-   "fieldtype": "Link",
-   "label": "Master Folio",
-   "options": "Guest Folio",
-   "read_only": 1,
-   "description": "Created automatically when the Group checks in."
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [
-  {
-   "link_doctype": "Hotel Reservation",
-   "link_fieldname": "group_booking"
-  }
- ],
- "modified": "2025-01-28 11:40:00.000000",
- "modified_by": "Administrator",
- "module": "Hospitality Core",
- "name": "Hotel Group Booking",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "read": 1,
-   "write": 1,
-   "role": "System Manager"
-  },
-  {
-   "create": 1,
-   "read": 1,
-   "write": 1,
-   "role": "Hospitality User"
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "track_changes": 1
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "field:group_name",
+    "creation": "2025-01-28 11:40:00.000000",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "group_name",
+        "master_payer",
+        "status",
+        "column_break_1",
+        "arrival_date",
+        "departure_date",
+        "master_folio"
+    ],
+    "fields": [
+        {
+            "fieldname": "group_name",
+            "fieldtype": "Data",
+            "label": "Group Name",
+            "reqd": 1,
+            "unique": 1,
+            "description": "e.g., 'Smith Wedding 2025' or 'TechConf Delegates'"
+        },
+        {
+            "fieldname": "master_payer",
+            "fieldtype": "Link",
+            "label": "Master Payer (Customer)",
+            "options": "Customer",
+            "description": "The Company/Person responsible for the Master Folio."
+        },
+        {
+            "fieldname": "discount_type",
+            "fieldtype": "Select",
+            "label": "Master Discount Type",
+            "options": "\nPercentage\nAmount"
+        },
+        {
+            "fieldname": "discount_value",
+            "fieldtype": "Currency",
+            "label": "Master Discount Value"
+        },
+        {
+            "default": "Tentative",
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "label": "Status",
+            "options": "Tentative\nConfirmed\nIn House\nChecked Out\nCancelled",
+            "reqd": 1
+        },
+        {
+            "fieldname": "column_break_1",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "arrival_date",
+            "fieldtype": "Date",
+            "label": "Arrival Date"
+        },
+        {
+            "fieldname": "departure_date",
+            "fieldtype": "Date",
+            "label": "Departure Date"
+        },
+        {
+            "fieldname": "master_folio",
+            "fieldtype": "Link",
+            "label": "Master Folio",
+            "options": "Guest Folio",
+            "read_only": 1,
+            "description": "Created automatically when the Group checks in."
+        },
+        {
+            "fieldname": "section_break_rooms",
+            "fieldtype": "Section Break",
+            "label": "Room List"
+        },
+        {
+            "fieldname": "rooms",
+            "fieldtype": "Table",
+            "label": "Rooms",
+            "options": "Hotel Group Booking Room"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [
+        {
+            "link_doctype": "Hotel Reservation",
+            "link_fieldname": "group_booking"
+        }
+    ],
+    "modified": "2025-01-28 11:40:00.000000",
+    "modified_by": "Administrator",
+    "module": "Hospitality Core",
+    "name": "Hotel Group Booking",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "read": 1,
+            "write": 1,
+            "role": "System Manager"
+        },
+        {
+            "create": 1,
+            "read": 1,
+            "write": 1,
+            "role": "Hospitality User"
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
 }

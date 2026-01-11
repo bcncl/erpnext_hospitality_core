@@ -17,18 +17,10 @@ def execute(filters=None):
         {"label": _("Rate Plan"), "fieldname": "rate_plan", "fieldtype": "Data", "width": 120},
         {"label": _("Pax"), "fieldname": "pax", "fieldtype": "Data", "width": 60, "default": "1"}, # Adults/Children
         {"label": _("Company"), "fieldname": "company", "fieldtype": "Link", "options": "Customer", "width": 150},
-        {"label": _("Balance"), "fieldname": "balance", "fieldtype": "Currency", "width": 120}
+        {"label": _("Balance Due"), "fieldname": "balance_due", "fieldtype": "Currency", "width": 110},
+        {"label": _("Credit"), "fieldname": "excess_payment", "fieldtype": "Currency", "width": 110}
     ]
 
-    # Logic: 
-    # House List = Rooms Occupied on Target Date.
-    # Logic: Reservation Arrival <= Target AND Reservation Departure > Target
-    # We filter for Status = Checked In (if today) or was active (deduced).
-    
-    # Note: If looking at the past, strictly relying on current 'Checked In' status is wrong.
-    # We must rely on dates.
-    # However, 'Checked Out' reservations are also valid for the House List of *yesterday*.
-    
     sql = """
         SELECT 
             res.room,
@@ -38,7 +30,8 @@ def execute(filters=None):
             res.departure_date,
             res.rate_plan,
             res.company,
-            folio.outstanding_balance as balance
+            CASE WHEN folio.outstanding_balance > 0 THEN folio.outstanding_balance ELSE 0 END as balance_due,
+            folio.excess_payment
         FROM
             `tabHotel Reservation` res
         LEFT JOIN
@@ -50,11 +43,6 @@ def execute(filters=None):
             AND res.departure_date > %(date)s
             AND res.status IN ('Checked In', 'Checked Out') 
     """
-    
-    # Note: We include 'Checked Out' because if I run the report for Yesterday, 
-    # a guest who checked out Today was "In House" Yesterday.
-    # If I run it for Today, 'Checked Out' guests are gone (Departure > Today would be false), 
-    # so they are correctly excluded.
     
     data = frappe.db.sql(sql, {"date": target_date}, as_dict=True)
     

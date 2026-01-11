@@ -20,22 +20,39 @@ def execute(filters=None):
     
     start_date = getdate(filters.get("from_date"))
     end_date = getdate(filters.get("to_date"))
+    reception = filters.get("hotel_reception")
     
     # 1. Total Inventory (Count of enabled rooms)
-    total_rooms_count = frappe.db.count("Hotel Room", filters={"is_enabled": 1})
+    # Filter by reception if provided
+    room_filters = {"is_enabled": 1}
+    if reception:
+        room_filters["hotel_reception"] = reception
+        
+    total_rooms_count = frappe.db.count("Hotel Room", filters=room_filters)
 
     # 2. Fetch all Room Revenue Transactions in range
     # Grouped by Date
     revenue_map = {}
-    rev_sql = """
-        SELECT posting_date, SUM(amount) as total
-        FROM `tabFolio Transaction`
-        WHERE posting_date BETWEEN %s AND %s
-        AND is_void = 0
-        AND item IN (SELECT name FROM `tabItem` WHERE item_code='ROOM-RENT' OR item_group='Accommodation')
-        GROUP BY posting_date
+    
+    # Base params
+    params = {"start": start_date, "end": end_date}
+    reception_condition = ""
+    
+    if reception:
+        reception_condition = "AND gf.hotel_reception = %(reception)s"
+        params["reception"] = reception
+        
+    rev_sql = f"""
+        SELECT ft.posting_date, SUM(ft.amount) as total
+        FROM `tabFolio Transaction` ft
+        JOIN `tabGuest Folio` gf ON ft.parent = gf.name
+        WHERE ft.posting_date BETWEEN %(start)s AND %(end)s
+        AND ft.is_void = 0
+        AND ft.item IN (SELECT name FROM `tabItem` WHERE item_code='ROOM-RENT' OR item_group='Accommodation')
+        {reception_condition}
+        GROUP BY ft.posting_date
     """
-    rev_data = frappe.db.sql(rev_sql, (start_date, end_date), as_dict=True)
+    rev_data = frappe.db.sql(rev_sql, params, as_dict=True)
     for r in rev_data:
         revenue_map[str(r.posting_date)] = flt(r.total)
 
@@ -46,14 +63,15 @@ def execute(filters=None):
         
         # Calculate Occupied
         # Count reservations where Date is within [Arrival, Departure)
-        # We explicitly exclude Checked Out if they left BEFORE this date, 
-        # but the date range check handles that.
-        # Status must be Checked In (for live) or Checked Out (for history).
-        occupied_count = frappe.db.count("Hotel Reservation", {
+        res_filters = {
             "arrival_date": ["<=", str_date],
             "departure_date": [">", str_date], 
             "status": ["in", ["Checked In", "Checked Out"]] 
-        })
+        }
+        if reception:
+            res_filters["hotel_reception"] = reception
+            
+        occupied_count = frappe.db.count("Hotel Reservation", res_filters)
 
         revenue = revenue_map.get(str_date, 0.0)
         

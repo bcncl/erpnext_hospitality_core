@@ -62,11 +62,34 @@ def add_rooms_to_group(group_booking, rooms):
 def mass_check_in(group_booking):
     """
     Finds all 'Reserved' bookings linked to this group and checks them in.
+    This includes both regular group reservations and the master payer reservation.
     """
+    # Get group doc to check for master folio
+    group_doc = frappe.get_doc("Hotel Group Booking", group_booking)
+    
+    # Get all reservations linked to this group
     reservations = frappe.get_all("Hotel Reservation", 
         filters={"group_booking": group_booking, "status": "Reserved"},
         fields=["name"]
     )
+    
+    frappe.log_error(f"Group {group_booking}: Found {len(reservations)} reservations via group_booking field", "Mass Check-in Debug")
+    
+    # Also check for master payer reservation by folio if it exists
+    if group_doc.master_folio:
+        master_res = frappe.get_all("Hotel Reservation",
+            filters={
+                "folio": group_doc.master_folio,
+                "status": "Reserved"
+            },
+            fields=["name"]
+        )
+        frappe.log_error(f"Group {group_booking}: Found {len(master_res)} reservations via master_folio", "Mass Check-in Debug")
+        # Add master reservation if not already in list
+        for m_res in master_res:
+            if m_res not in reservations:
+                reservations.append(m_res)
+                frappe.log_error(f"Added master reservation {m_res.name} to check-in list", "Mass Check-in Debug")
     
     if not reservations:
         return {"message": _("No reserved bookings found for this group.")}
@@ -76,11 +99,13 @@ def mass_check_in(group_booking):
     for r in reservations:
         try:
             doc = frappe.get_doc("Hotel Reservation", r.name)
+            frappe.log_error(f"Checking in {doc.name}: rate_plan={doc.rate_plan}, room_type={doc.room_type}, folio={doc.folio}", "Mass Check-in Debug")
             doc.process_check_in()
             count += 1
         except Exception as e:
             err_msg = str(e) or _("Unknown error")
             errors.append(f"<b>{r.name}</b>: {err_msg}")
+            frappe.log_error(f"Failed to check in {r.name}: {err_msg}", "Mass Check-in Error")
             
     res_msg = _("Successfully Checked In {0} guests.").format(count)
     if errors:
@@ -119,7 +144,7 @@ def mass_check_out(group_booking):
     return {"message": res_msg, "success_count": count, "error_count": len(errors)}
     
 @frappe.whitelist()
-def bulk_reserve_rooms(group_booking, guest, rooms, arrival_date, departure_date):
+def bulk_reserve_rooms(group_booking, guest, rooms, arrival_date, departure_date, discount_type=None, discount_value=0):
     """
     Creates multiple Hotel Reservation records for a guest under a group booking.
     rooms: JSON list of room names
@@ -149,8 +174,40 @@ def bulk_reserve_rooms(group_booking, guest, rooms, arrival_date, departure_date
             res.is_group_guest = 1
             res.company = group_doc.master_payer
             
+            # --- EXTRACT FROM TABLE ---
+            # Look for this room in the group booking's rooms child table
+            row = next((r for r in group_doc.get("rooms", []) if r.room == room), None)
+            
+            if row:
+                res.rate_plan = row.rate_plan
+                res.discount_type = row.discount_type or group_doc.discount_type
+                res.discount_value = row.discount_value if row.discount_type else group_doc.discount_value
+            else:
+                # Fallback to Group Level
+                res.discount_type = group_doc.discount_type
+                res.discount_value = group_doc.discount_value
+            
+            # Override with Dialog Values if explicitly provided (optional, let's prioritize table)
+            if discount_type:
+                res.discount_type = discount_type
+                res.discount_value = float(discount_value) if discount_value else 0
+            
             # Validation will happen on insert (availability check etc.)
             res.insert()
+            
+            # Link to master folio via routing if master folio exists
+            if res.folio and group_doc.master_folio:
+                try:
+                    routing = frappe.new_doc("Reservation Routing")
+                    routing.reservation = res.name
+                    routing.source_folio = res.folio
+                    routing.target_folio = group_doc.master_folio
+                    routing.percentage = 100  # Route all charges to master
+                    routing.insert(ignore_permissions=True)
+                except Exception as routing_error:
+                    # Log but don't fail the reservation creation
+                    frappe.log_error(f"Failed to create routing for {res.name}: {str(routing_error)}", "Bulk Reserve Routing Error")
+            
             created_reservations.append(res.name)
         except Exception as e:
             err_msg = str(e) or _("Unknown error")

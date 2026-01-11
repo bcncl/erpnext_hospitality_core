@@ -1,6 +1,9 @@
 frappe.ui.form.on('Guest Folio', {
     refresh: function (frm) {
-        frm.set_read_only();
+        // Only set read-only if formally closed
+        if (frm.doc.status === 'Closed' || frm.doc.status === 'Cancelled') {
+            frm.set_read_only();
+        }
 
         // Button: Record Payment
         if (frm.doc.status === 'Open' || frm.doc.status === 'Closed') {
@@ -35,23 +38,35 @@ frappe.ui.form.on('Guest Folio', {
         }
 
         // Button: Move Transactions (Move Bill)
-        if (frm.doc.status === 'Open') {
+        let can_manage_folio = frappe.user_roles.includes('Frontdesk Supervisor') ||
+            frappe.session.user === 'Administrator';
+
+        if (frm.doc.status === 'Open' && can_manage_folio) {
             frm.add_custom_button(__('Move Transactions'), function () {
                 move_transactions_dialog(frm);
             }, 'Actions');
         }
 
         // Button: Void Transaction
-        if (frm.doc.status === 'Open') {
+        if (frm.doc.status === 'Open' && can_manage_folio) {
             frm.add_custom_button(__('Void Transaction'), function () {
                 void_transaction_dialog(frm);
             }, 'Actions');
         }
 
         // Highlight Balance
-        if (frm.doc.outstanding_balance > 0) {
+        if (frm.doc.outstanding_balance > 0.01) {
+            frm.set_df_property('outstanding_balance', 'hidden', 0);
+            frm.set_df_property('excess_payment', 'hidden', 1);
             frm.set_df_property('outstanding_balance', 'read_only', 1);
             $(frm.fields_dict['outstanding_balance'].wrapper).find('input').css('color', 'red').css('font-weight', 'bold');
+        } else if (frm.doc.outstanding_balance < -0.01) {
+            frm.set_df_property('outstanding_balance', 'hidden', 1);
+            frm.set_df_property('excess_payment', 'hidden', 0);
+            $(frm.fields_dict['excess_payment'].wrapper).find('input').css('color', 'green').css('font-weight', 'bold');
+        } else {
+            frm.set_df_property('outstanding_balance', 'hidden', 0);
+            frm.set_df_property('excess_payment', 'hidden', 1);
         }
     }
 });
@@ -222,17 +237,21 @@ function make_payment_entry(frm) {
 
         // Function to create payment entry with customer
         const create_payment = (customer) => {
-            frappe.model.with_doctype('Payment Entry', function () {
-                var pe = frappe.model.get_new_doc('Payment Entry');
-                pe.payment_type = 'Receive';
-                pe.party_type = 'Customer';
-                pe.party = customer;
-                pe.party_name = customer;
-                pe.paid_amount = frm.doc.outstanding_balance;
-                pe.reference_no = frm.doc.name;
-                pe.reference_date = frappe.datetime.now_date();
-                pe.remarks = `Payment from Guest: ${guest_name} (Folio: ${frm.doc.name})`;
-                frappe.set_route('Form', 'Payment Entry', pe.name);
+            frappe.ui.form.make_quick_entry('Payment Entry', (doc) => {
+                // Callback after successful creation
+                frappe.msgprint(`Payment ${doc.name} recorded.`);
+                frm.reload_doc();
+            }, null, {
+                // Pre-filled values for the Quick Entry Dialog
+                doctype: 'Payment Entry',
+                payment_type: 'Receive',
+                party_type: 'Customer',
+                party: customer,
+                party_name: customer,
+                paid_amount: frm.doc.outstanding_balance,
+                reference_no: frm.doc.name,
+                reference_date: frappe.datetime.now_date(),
+                remarks: `Payment from Guest: ${guest_name} (Folio: ${frm.doc.name})`
             });
         };
 

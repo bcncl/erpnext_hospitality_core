@@ -73,3 +73,42 @@ def process_room_charge(doc, method=None):
     sync_folio_balance(frappe.get_doc("Guest Folio", folio_name))
 
     frappe.msgprint(_("Posted {0} items from POS to Folio {1}").format(len(doc.items), folio_name))
+
+def void_room_charge(doc, method=None):
+    """
+    Hook: POS Invoice (on_cancel)
+    Logic: Deletes all folio transactions linked to this POS Invoice.
+    Requirement: "the transaction should be located and the row deleted"
+    """
+    # 1. Find all Folio Transactions linked to this POS Invoice
+    transactions = frappe.get_all("Folio Transaction", 
+        filters={"reference_doctype": "POS Invoice", "reference_name": doc.name},
+        fields=["name", "parent"]
+    )
+
+    if not transactions:
+        return
+
+    affected_folios = set()
+    for txn in transactions:
+        affected_folios.add(txn.parent)
+        
+        # 2. Find mirror transactions
+        mirror_txns = frappe.get_all("Folio Transaction",
+            filters={"reference_doctype": "Folio Transaction", "reference_name": txn.name},
+            fields=["name", "parent"]
+        )
+        for m_txn in mirror_txns:
+            affected_folios.add(m_txn.parent)
+            frappe.delete_doc("Folio Transaction", m_txn.name, ignore_permissions=True)
+
+        # Delete the original transaction
+        frappe.delete_doc("Folio Transaction", txn.name, ignore_permissions=True)
+
+    # 3. Sync all affected folios
+    from hospitality_core.hospitality_core.api.folio import sync_folio_balance
+    for folio_name in affected_folios:
+        if frappe.db.exists("Guest Folio", folio_name):
+            sync_folio_balance(frappe.get_doc("Guest Folio", folio_name))
+
+    frappe.msgprint(_("Removed {0} items from Folio(s) due to POS Invoice cancellation.").format(len(transactions)))

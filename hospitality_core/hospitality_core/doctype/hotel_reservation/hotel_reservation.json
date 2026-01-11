@@ -6,6 +6,8 @@
     "engine": "InnoDB",
     "field_order": [
         "naming_series",
+        "hotel_reception",
+        "reserved_by",
         "guest",
         "room_type",
         "room",
@@ -22,7 +24,9 @@
         "is_company_guest",
         "company",
         "routing_instructions",
-        "amended_from"
+        "amended_from",
+        "is_group_guest",
+        "group_booking"
     ],
     "fields": [
         {
@@ -34,9 +38,28 @@
             "reqd": 1
         },
         {
+            "fieldname": "hotel_reception",
+            "fieldtype": "Link",
+            "in_filter": 1,
+            "in_standard_filter": 1,
+            "label": "Hotel Reception",
+            "options": "Hotel Reception",
+            "reqd": 1
+        },
+        {
+            "fieldname": "reserved_by",
+            "fieldtype": "Link",
+            "label": "Reserved By",
+            "options": "User",
+            "read_only": 1
+        },
+        {
             "fieldname": "guest",
             "fieldtype": "Link",
+            "in_filter": 1,
+            "in_global_search": 1,
             "in_list_view": 1,
+            "in_standard_filter": 1,
             "label": "Guest",
             "options": "Guest",
             "reqd": 1,
@@ -45,18 +68,22 @@
         {
             "fieldname": "room_type",
             "fieldtype": "Link",
+            "in_filter": 1,
+            "in_global_search": 1,
+            "in_standard_filter": 1,
             "label": "Room Type",
             "options": "Hotel Room Type",
-            "reqd": 1,
-            "set_only_once": 1
+            "reqd": 1
         },
         {
             "fieldname": "room",
             "fieldtype": "Link",
+            "in_filter": 1,
+            "in_global_search": 1,
+            "in_standard_filter": 1,
             "label": "Room",
             "options": "Hotel Room",
-            "reqd": 1,
-            "set_only_once": 1
+            "reqd": 1
         },
         {
             "fieldname": "column_break_1",
@@ -66,7 +93,10 @@
             "default": "Reserved",
             "fieldname": "status",
             "fieldtype": "Select",
+            "in_filter": 1,
+            "in_global_search": 1,
             "in_list_view": 1,
+            "in_standard_filter": 1,
             "label": "Booking Status",
             "options": "Reserved\nChecked In\nChecked Out\nCancelled",
             "read_only": 1,
@@ -75,10 +105,11 @@
         {
             "fieldname": "arrival_date",
             "fieldtype": "Date",
+            "in_filter": 1,
             "in_list_view": 1,
+            "in_standard_filter": 1,
             "label": "Arrival Date",
-            "reqd": 1,
-            "set_only_once": 1
+            "reqd": 1
         },
         {
             "fieldname": "departure_date",
@@ -96,68 +127,67 @@
             "fieldname": "rate_plan",
             "fieldtype": "Link",
             "label": "Rate Plan",
-            "options": "Room Rate Plan",
-            "set_only_once": 1
+            "options": "Room Rate Plan"
         },
         {
             "default": "0",
             "fieldname": "is_complimentary",
             "fieldtype": "Check",
-            "label": "Complimentary (Free Stay)",
-            "set_only_once": 1
+            "in_filter": 1,
+            "in_standard_filter": 1,
+            "label": "Complimentary (Free Stay)"
         },
         {
+            "default": "Amount",
             "depends_on": "eval:doc.is_complimentary==0",
             "fieldname": "discount_type",
             "fieldtype": "Select",
             "label": "Discount Type",
-            "options": "\nPercentage\nAmount",
-            "set_only_once": 1
+            "options": "Amount\nPercentage"
         },
         {
             "depends_on": "eval:doc.is_complimentary==0 && doc.discount_type",
             "fieldname": "discount_value",
             "fieldtype": "Currency",
-            "label": "Discount Value",
-            "set_only_once": 0
+            "label": "Discount Value"
         },
         {
             "default": "0",
+            "description": "If checked, all charges are automatically mirrored to the Company Master Folio.",
             "fieldname": "is_company_guest",
             "fieldtype": "Check",
-            "label": "Is Company Guest",
-            "description": "If checked, all charges are automatically mirrored to the Company Master Folio.",
-            "set_only_once": 1
+            "in_filter": 1,
+            "in_standard_filter": 1,
+            "label": "Is Company Guest"
         },
         {
             "default": "0",
+            "description": "If checked, all charges are routed to the Group Master Folio.",
             "fieldname": "is_group_guest",
             "fieldtype": "Check",
-            "label": "Is Group Guest",
-            "description": "If checked, all charges are routed to the Group Master Folio.",
-            "set_only_once": 1
+            "label": "Is Group Guest"
         },
         {
             "fieldname": "group_booking",
             "fieldtype": "Link",
             "label": "Group Booking",
-            "options": "Hotel Group Booking",
-            "mandatory_depends_on": "eval:doc.is_group_guest==1"
+            "mandatory_depends_on": "eval:doc.is_group_guest==1",
+            "options": "Hotel Group Booking"
         },
         {
+            "depends_on": "eval:doc.is_company_guest==true",
             "fieldname": "company",
             "fieldtype": "Link",
-            "label": "Company",
-            "options": "Customer",
+            "label": "Company Name",
             "mandatory_depends_on": "eval:doc.is_company_guest==1",
-            "set_only_once": 1
+            "options": "Customer"
         },
         {
             "fieldname": "routing_instructions",
             "fieldtype": "Table",
+            "hidden": 1,
             "label": "Routing Instructions",
-            "options": "Reservation Routing",
-            "set_only_once": 1
+            "options": "Reservation Routing"
         },
         {
             "fieldname": "folio",
@@ -176,12 +206,12 @@
         }
     ],
     "index_web_pages_for_search": 1,
-    "is_submittable": 0,
     "links": [],
-    "modified": "2025-01-28 14:00:00.000000",
+    "modified": "2026-01-11 04:36:04.538259",
     "modified_by": "Administrator",
     "module": "Hospitality Core",
     "name": "Hotel Reservation",
+    "naming_rule": "By \"Naming Series\" field",
     "owner": "Administrator",
     "permissions": [
         {
@@ -194,7 +224,6 @@
             "report": 1,
             "role": "System Manager",
             "share": 1,
-            "submit": 1,
             "write": 1
         },
         {
@@ -206,14 +235,13 @@
             "report": 1,
             "role": "Hospitality User",
             "share": 1,
-            "submit": 1,
             "write": 1
         }
     ],
     "row_format": "Dynamic",
+    "search_fields": "guest,room",
     "sort_field": "modified",
     "sort_order": "DESC",
-    "search_fields": "guest,room",
     "states": [],
     "track_changes": 1
 }

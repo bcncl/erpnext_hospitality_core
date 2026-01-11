@@ -6,6 +6,12 @@ frappe.query_reports["Daily Arrivals"] = {
             "fieldtype": "Date",
             "default": frappe.datetime.now_date(),
             "reqd": 1
+        },
+        {
+            "fieldname": "hotel_reception",
+            "label": __("Hotel Reception"),
+            "fieldtype": "Link",
+            "options": "Hotel Reception"
         }
     ]
 };

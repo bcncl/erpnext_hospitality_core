@@ -25,8 +25,11 @@ def run_daily_audit():
 
     count = 0
     for res in active_reservations:
-        if process_single_reservation(res, posting_date):
-            count += 1
+        try:
+            if process_single_reservation(res, posting_date):
+                count += 1
+        except Exception as e:
+            frappe.log_error(f"Night Audit Failure for Reservation {res.name}: {str(e)}", "Night Audit Error")
 
     if count > 0:
         frappe.msgprint(_("Auto-Bill (2 PM): Posted charges for {0} rooms.").format(count))
@@ -35,7 +38,7 @@ def process_single_reservation(res, posting_date):
     if getdate(res.departure_date) <= getdate(posting_date):
         handle_overstay(res)
 
-    if already_charged_today(res.folio, posting_date):
+    if already_charged_today(res.folio, posting_date, room=res.room):
         return False
 
     # Get Base Rate
@@ -47,21 +50,29 @@ def process_single_reservation(res, posting_date):
         
     return False
 
-def already_charged_today(folio_name, date):
-    return frappe.db.exists("Folio Transaction", {
+def already_charged_today(folio_name, date, room=None):
+    filters = {
         "parent": folio_name,
         "posting_date": date,
         "is_void": 0,
         "item": ["in", get_room_rent_item_codes()] 
-    })
+    }
+    if room:
+        # Crucial for Group Payer Folio which contains mirrored charges for many rooms
+        filters["description"] = ["like", f"%{room}%"]
+        
+    return frappe.db.exists("Folio Transaction", filters)
 
 def get_room_rent_item_codes():
     return frappe.db.sql_list("SELECT name FROM `tabItem` WHERE item_code='ROOM-RENT' OR item_group='Accommodation'")
 
 def handle_overstay(res):
     new_departure = add_days(nowdate(), 1)
-    frappe.db.set_value("Hotel Reservation", res.name, "departure_date", new_departure)
-    frappe.get_doc("Hotel Reservation", res.name).add_comment("Info", _("Auto-Extended: Guest still in-house at 2 PM."))
+    # frappe.db.set_value("Hotel Reservation", res.name, "departure_date", new_departure)
+    doc = frappe.get_doc("Hotel Reservation", res.name)
+    doc.departure_date = new_departure
+    doc.add_comment("Info", _("Auto-Extended: Guest still in-house at 2 PM."))
+    doc.save(ignore_permissions=True)
 
 def get_rate(rate_plan, room_type, date):
     if not rate_plan:
@@ -128,15 +139,18 @@ def post_room_charge(res, base_amount, date):
     discount_desc = ""
     discount_item = "DISCOUNT"
 
-    if res.is_complimentary:
+    # DEBUG: Log discount info
+    frappe.log_error(f"Posting Charge for {res.name}: type={res.get('discount_type')}, value={res.get('discount_value')}, comp={res.get('is_complimentary')}", "Post Charge Discount Debug")
+
+    if res.get("is_complimentary"):
         discount_amount = base_amount
         discount_desc = "Complimentary Adjustment"
         discount_item = "COMPLIMENTARY"
-    elif res.discount_type == "Percentage":
+    elif str(res.discount_type).strip() == "Percentage":
         pct = flt(res.discount_value)
         discount_amount = base_amount * (pct / 100.0)
         discount_desc = f"Room Discount ({pct}%)"
-    elif res.discount_type == "Amount":
+    elif str(res.discount_type).strip() == "Amount":
         discount_amount = flt(res.discount_value)
         discount_desc = "Room Discount (Fixed)"
 

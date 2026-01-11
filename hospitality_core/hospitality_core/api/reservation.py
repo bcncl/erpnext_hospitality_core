@@ -162,13 +162,15 @@ def create_folio(reservation_doc):
     folio.room = reservation_doc.room
     folio.status = "Provisional"
     folio.company = reservation_doc.company # If corporate booking
+    folio.hotel_reception = reservation_doc.hotel_reception
+    folio.reserved_by = reservation_doc.reserved_by
     folio.open_date = nowdate()
     
     # Save the Folio
     folio.insert(ignore_permissions=True)
     
     # Link Folio back to Reservation
-    frappe.db.set_value("Hotel Reservation", reservation_doc.name, "folio", folio.name)
+    reservation_doc.db_set("folio", folio.name)
     frappe.msgprint(_("Guest Folio {0} created successfully.").format(folio.name))
 
     # Transfer existing balances from the Guest Balance Ledger

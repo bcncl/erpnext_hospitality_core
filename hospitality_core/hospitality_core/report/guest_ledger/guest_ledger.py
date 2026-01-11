@@ -11,24 +11,14 @@ def execute(filters=None):
         {"label": _("Guest Name"), "fieldname": "guest_name", "fieldtype": "Data", "width": 160},
         {"label": _("Arr Date"), "fieldname": "arrival_date", "fieldtype": "Date", "width": 100},
         {"label": _("Dep Date"), "fieldname": "departure_date", "fieldtype": "Date", "width": 100},
-        {"label": _("Charges"), "fieldname": "total_charges", "fieldtype": "Currency", "width": 120},
-        {"label": _("Payments"), "fieldname": "total_payments", "fieldtype": "Currency", "width": 120},
-        {"label": _("Balance (Guest)"), "fieldname": "outstanding_balance", "fieldtype": "Currency", "width": 120}
+        {"label": _("Charges"), "fieldname": "total_charges", "fieldtype": "Currency", "width": 100},
+        {"label": _("Payments"), "fieldname": "total_payments", "fieldtype": "Currency", "width": 100},
+        {"label": _("Balance Due"), "fieldname": "balance_due", "fieldtype": "Currency", "width": 120},
+        {"label": _("Excess Payment"), "fieldname": "excess_payment", "fieldtype": "Currency", "width": 120}
     ]
 
-    # Logic:
-    # 1. Fetch Open Guest Folios.
-    # 2. Requirement: "Guests whose bills are billed to their company is filtered out".
-    #    This implies we want the "Private Guest Ledger".
-    #    We exclude folios where 'company' field is set (indicating Corporate master billing)
-    #    OR we exclude folios where the balance is 0 (fully transferred).
-    
-    # We allow a filter to toggle this behavior if needed, but default is strict Guest Ledger.
-    
     conditions = "gf.status = 'Open'"
     
-    # If a guest is purely corporate, they usually have a company linked on the folio.
-    # We exclude them to show only "Private" liability.
     if not filters.get("show_corporate"):
         conditions += " AND (gf.company IS NULL OR gf.company = '')"
 
@@ -41,7 +31,8 @@ def execute(filters=None):
             res.departure_date,
             gf.total_charges,
             gf.total_payments,
-            gf.outstanding_balance
+            CASE WHEN gf.outstanding_balance > 0 THEN gf.outstanding_balance ELSE 0 END as balance_due,
+            gf.excess_payment
         FROM
             `tabGuest Folio` gf
         LEFT JOIN
@@ -50,7 +41,7 @@ def execute(filters=None):
             `tabHotel Reservation` res ON gf.reservation = res.name
         WHERE
             {conditions}
-            AND gf.outstanding_balance != 0
+            AND (gf.outstanding_balance != 0)
         ORDER BY
             gf.room ASC
     """
@@ -59,10 +50,12 @@ def execute(filters=None):
     
     # Add Total Row
     if data:
-        total_balance = sum(d.outstanding_balance for d in data)
+        total_due = sum(d.balance_due for d in data)
+        total_excess = sum(d.excess_payment for d in data)
         data.append({
-            "guest_name": "<b>TOTAL RECEIVABLE</b>",
-            "outstanding_balance": total_balance
+            "guest_name": "<b>TOTALS</b>",
+            "balance_due": total_due,
+            "excess_payment": total_excess
         })
 
     return columns, data

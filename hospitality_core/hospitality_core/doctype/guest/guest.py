@@ -3,7 +3,14 @@ from frappe import _
 from frappe.model.document import Document
 
 class Guest(Document):
-    pass
+    def validate(self):
+        if not self.customer:
+            customer = frappe.new_doc("Customer")
+            customer.customer_name = self.full_name
+            customer.customer_type = "Individual"
+            customer.flags.ignore_permissions = True
+            customer.insert()
+            self.customer = customer.name
 
 @frappe.whitelist()
 def get_guest_stats(guest):

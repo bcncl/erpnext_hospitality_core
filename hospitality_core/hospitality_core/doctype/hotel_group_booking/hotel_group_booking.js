@@ -84,6 +84,17 @@ frappe.ui.form.on('Hotel Group Booking', {
                             options: 'Hotel Room Type'
                         },
                         {
+                            label: __('Discount Type'),
+                            fieldname: 'discount_type',
+                            fieldtype: 'Select',
+                            options: '\nPercentage\nAmount'
+                        },
+                        {
+                            label: __('Discount Value'),
+                            fieldname: 'discount_value',
+                            fieldtype: 'Currency'
+                        },
+                        {
                             label: __('Available Rooms'),
                             fieldname: 'rooms_html',
                             fieldtype: 'HTML'
@@ -108,7 +119,9 @@ frappe.ui.form.on('Hotel Group Booking', {
                                 guest: values.guest,
                                 rooms: JSON.stringify(selected_rooms),
                                 arrival_date: frm.doc.arrival_date,
-                                departure_date: frm.doc.departure_date
+                                departure_date: frm.doc.departure_date,
+                                discount_type: values.discount_type || null,
+                                discount_value: values.discount_value || 0
                             },
                             freeze: true,
                             callback: function (r) {

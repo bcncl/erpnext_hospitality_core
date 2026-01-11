@@ -19,9 +19,15 @@ frappe.query_reports["Room Availability Report"] = {
             "label": __("Room Type"),
             "fieldtype": "Link",
             "options": "Hotel Room Type"
+        },
+        {
+            "fieldname": "hotel_reception",
+            "label": __("Hotel Reception"),
+            "fieldtype": "Link",
+            "options": "Hotel Reception"
         }
     ],
-    "formatter": function(value, row, column, data, default_formatter) {
+    "formatter": function (value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
         if (column.fieldname === "available") {
             if (data.available <= 0) {

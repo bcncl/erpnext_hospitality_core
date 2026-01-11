@@ -22,9 +22,19 @@ def execute(filters=None):
     # 1. We query `Folio Transaction`
     # 2. We join `Item` to get the Item Group (Department)
     # 3. We exclude Voided transactions and Payments (Amount < 0)
-    #    *Payments are Cash Flow, not Sales Revenue.
     
-    sql = """
+    conditions = ""
+    # Filter: Exclude Companies and Complimentary if checkbox is NOT checked
+    if not filters.get("include_non_revenue"):
+         conditions += """
+            AND (gf.is_company_master = 0 OR gf.is_company_master IS NULL)
+            AND (res.is_complimentary = 0 OR res.is_complimentary IS NULL)
+         """
+    
+    if filters.get("hotel_reception"):
+        conditions += " AND res.hotel_reception = %(hotel_reception)s"
+    
+    sql = f"""
         SELECT
             ft.posting_date,
             gf.room,
@@ -39,27 +49,20 @@ def execute(filters=None):
         LEFT JOIN
             `tabGuest` guest ON gf.guest = guest.name
         LEFT JOIN
+            `tabHotel Reservation` res ON gf.reservation = res.name
+        LEFT JOIN
             `tabItem` item ON ft.item = item.name
         WHERE
             ft.posting_date BETWEEN %(from_date)s AND %(to_date)s
             AND ft.is_void = 0
             AND ft.amount > 0 
+            {conditions}
         ORDER BY
             ft.posting_date, item.item_group
     """
     
-    data = frappe.db.sql(sql, {"from_date": date_from, "to_date": date_to}, as_dict=True)
+    data = frappe.db.sql(sql, filters, as_dict=True)
     
-    # Add Summary Row
-    total_sales = sum([d.amount for d in data])
-    if data:
-        data.append({
-            "posting_date": "",
-            "room": "",
-            "guest_name": "<b>TOTAL</b>",
-            "item_group": "",
-            "description": "",
-            "amount": total_sales
-        })
+
 
     return columns, data

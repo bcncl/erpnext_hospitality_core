@@ -18,12 +18,17 @@ def execute(filters=None):
     ]
 
     target_date = filters.get("date") or nowdate()
+    filters["target_date"] = target_date
 
     # Definition: "customers that were checkedin for a specific day"
     # This implies ACTUAL arrivals.
     # We exclude 'Reserved' because they haven't checked in yet.
     # We include 'Checked Out' because if they arrived today and left today, they were still an arrival.
     
+    conditions = ""
+    if filters.get("hotel_reception"):
+        conditions += " AND res.hotel_reception = %(hotel_reception)s"
+
     sql = """
         SELECT
             res.name,
@@ -41,6 +46,7 @@ def execute(filters=None):
         WHERE
             res.arrival_date = %(target_date)s
             AND res.status IN ('Checked In', 'Checked Out')
+            {conditions}
         ORDER BY
             res.creation ASC
     """
@@ -48,5 +54,5 @@ def execute(filters=None):
     # Note: Using TIME(res.creation) as a proxy for Check-in time if no specific check-in timestamp field exists.
     # Ideally, you might want a 'check_in_time' custom field set on transition.
     
-    data = frappe.db.sql(sql, {"target_date": target_date}, as_dict=True)
+    data = frappe.db.sql(sql.format(conditions=conditions), filters, as_dict=True)
     return columns, data

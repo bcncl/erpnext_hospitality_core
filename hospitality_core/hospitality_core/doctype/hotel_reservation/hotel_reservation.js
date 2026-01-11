@@ -1,4 +1,21 @@
 frappe.ui.form.on('Hotel Reservation', {
+    onload: function (frm) {
+        if (frm.is_new()) {
+            frm.set_value('status', 'Reserved');
+            frm.set_value('is_company_guest', 0);
+            frm.set_value('company', ''); // Ensure company is empty
+        }
+    },
+    validate: function (frm) {
+        if (!frm.doc.is_company_guest) {
+            frm.set_value('company', null);
+        }
+    },
+    is_company_guest: function (frm) {
+        if (!frm.doc.is_company_guest) {
+            frm.set_value('company', null);
+        }
+    },
     refresh: function (frm) {
         // Filter Rooms based on Room Type AND Availability
         frm.set_query('room', function () {
@@ -40,15 +57,23 @@ frappe.ui.form.on('Hotel Reservation', {
                 }).addClass("btn-primary");
             }
 
-            // CHECK OUT BUTTON
+            // NEW CHECK OUT BUTTON (Primary Action)
             if (frm.doc.status === 'Checked In') {
-                frm.add_custom_button(__('Check Out'), function () {
+                frm.page.set_primary_action(__('Check Out'), function () {
+                    // Pre-check Departure Date
                     if (frm.doc.departure_date !== frappe.datetime.nowdate()) {
-                        frappe.msgprint(__('Cannot Check Out. Departure date must be today.'));
+                        frappe.msgprint({
+                            title: __('Early Departure?'),
+                            message: __('Cannot Check Out. The Departure Date must be today. Please update the Departure Date/Shorten Stay first.'),
+                            indicator: 'orange'
+                        });
                         return;
                     }
-                    frappe.confirm(
-                        'Are you sure you want to Check Out this guest?',
+
+                    // Nice Confirmation Dialog
+                    frappe.warn(
+                        'Confirm Checkout',
+                        `Are you sure you want to Check Out <b>${frm.doc.guest}</b> from Room <b>${frm.doc.room}</b>?<br><br>This will close the folio and mark the room as Dirty.`,
                         function () {
                             frm.call({
                                 method: 'check_out_guest',
@@ -56,16 +81,21 @@ frappe.ui.form.on('Hotel Reservation', {
                                     name: frm.doc.name
                                 },
                                 freeze: true,
+                                freeze_message: __('Processing Checkout...'),
                                 callback: function (r) {
                                     if (!r.exc) {
-                                        frappe.msgprint('Guest Checked Out. Room marked as Dirty.');
+                                        frappe.show_alert({
+                                            message: __('Guest Checked Out Successfully'),
+                                            indicator: 'green'
+                                        });
                                         frm.reload_doc();
                                     }
                                 }
                             });
-                        }
+                        },
+                        'Check Out'
                     );
-                }).addClass("btn-danger");
+                });
             }
 
             // CANCEL RESERVATION BUTTON
@@ -99,14 +129,29 @@ frappe.ui.form.on('Hotel Reservation', {
                 }, 'View');
             }
 
-            // Readonly if Checked Out
-            if (frm.doc.status === 'Checked Out' || frm.doc.status === 'Cancelled') {
+            // Read-Only Logic for Checked In, Checked Out, and Cancelled
+            if (['Checked In', 'Checked Out', 'Cancelled'].includes(frm.doc.status)) {
                 frm.set_read_only();
-                frm.set_df_property('departure_date', 'read_only', 1);
+
+                let exceptions = [];
+                if (frm.doc.status === 'Checked In') {
+                    exceptions = ['departure_date', 'discount_value'];
+                }
+
+                // Force individual field properties to ensure they are locked/unlocked correctly
+                if (frm.fields_dict) {
+                    Object.keys(frm.fields_dict).forEach(fieldname => {
+                        let is_readonly = !exceptions.includes(fieldname);
+                        frm.set_df_property(fieldname, 'read_only', is_readonly ? 1 : 0);
+                    });
+                }
             }
         }
         // ROOM MOVE BUTTON
-        if (frm.doc.status === 'Checked In') {
+        let can_move_room = frappe.user_roles.includes('Frontdesk Supervisor') ||
+            frappe.session.user === 'Administrator';
+
+        if (frm.doc.status === 'Checked In' && can_move_room) {
             frm.add_custom_button(__('Move Room'), function () {
 
                 var d = new frappe.ui.Dialog({
@@ -149,7 +194,7 @@ frappe.ui.form.on('Hotel Reservation', {
                 });
                 d.show();
 
-            }, 'Actions');
+            }, __('Actions'));
         }
     },
 

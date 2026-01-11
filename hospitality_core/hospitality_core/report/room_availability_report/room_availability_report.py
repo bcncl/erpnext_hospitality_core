@@ -60,14 +60,21 @@ def execute(filters=None):
 
         # Get Sold Rooms (Reservations covering this date)
         # Arrival <= Date AND Departure > Date
-        sold_sql = """
+        sold_conditions = ""
+        sold_params = {"date": str_date}
+        if filters.get("hotel_reception"):
+            sold_conditions = "AND hotel_reception = %(hotel_reception)s"
+            sold_params["hotel_reception"] = filters.get("hotel_reception")
+
+        sold_sql = f"""
             SELECT room_type, COUNT(name) as cnt
             FROM `tabHotel Reservation`
             WHERE status IN ('Reserved', 'Checked In')
-            AND arrival_date <= %s AND departure_date > %s
+            AND arrival_date <= %(date)s AND departure_date > %(date)s
+            {sold_conditions}
             GROUP BY room_type
         """
-        sold_data = frappe.db.sql(sold_sql, (str_date, str_date), as_dict=True)
+        sold_data = frappe.db.sql(sold_sql, sold_params, as_dict=True)
         sold_map = {s.room_type: s.cnt for s in sold_data}
 
         for rt in all_types:

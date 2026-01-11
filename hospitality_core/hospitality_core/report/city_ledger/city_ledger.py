@@ -12,16 +12,12 @@ def execute(filters=None):
         {"label": _("Open Since"), "fieldname": "open_date", "fieldtype": "Date", "width": 100},
         {"label": _("Age (Days)"), "fieldname": "age", "fieldtype": "Int", "width": 80},
         {"label": _("Guest Ref"), "fieldname": "guest_name", "fieldtype": "Data", "width": 150},
-        {"label": _("Total Charges"), "fieldname": "total_charges", "fieldtype": "Currency", "width": 120},
-        {"label": _("Payments/Credits"), "fieldname": "total_payments", "fieldtype": "Currency", "width": 120},
-        {"label": _("Outstanding Balance"), "fieldname": "outstanding_balance", "fieldtype": "Currency", "width": 140}
+        {"label": _("Total Charges"), "fieldname": "total_charges", "fieldtype": "Currency", "width": 100},
+        {"label": _("Payments/Credits"), "fieldname": "total_payments", "fieldtype": "Currency", "width": 100},
+        {"label": _("Balance Due"), "fieldname": "balance_due", "fieldtype": "Currency", "width": 130},
+        {"label": _("Credit Balance"), "fieldname": "excess_payment", "fieldtype": "Currency", "width": 130}
     ]
 
-    # Logic: 
-    # City Ledger now strictly contains Master Folios (is_company_master = 1).
-    # Individual guest folios (even if corporate) are part of Guest Ledger until checked out 
-    # and transferred to the City Ledger (Master Folio).
-    
     conditions = "gf.status = 'Open' AND gf.is_company_master = 1"
     
     if filters.get("company"):
@@ -36,7 +32,8 @@ def execute(filters=None):
             guest.full_name as guest_name,
             gf.total_charges,
             gf.total_payments,
-            gf.outstanding_balance
+            CASE WHEN gf.outstanding_balance > 0 THEN gf.outstanding_balance ELSE 0 END as balance_due,
+            gf.excess_payment
         FROM
             `tabGuest Folio` gf
         LEFT JOIN
@@ -52,10 +49,12 @@ def execute(filters=None):
     
     # Add Total Row
     if data:
-        total = sum(d.outstanding_balance for d in data)
+        total_due = sum(d.balance_due for d in data)
+        total_credit = sum(d.excess_payment for d in data)
         data.append({
             "company": "<b>TOTAL CITY LEDGER</b>",
-            "outstanding_balance": total
+            "balance_due": total_due,
+            "excess_payment": total_credit
         })
     
     return columns, data

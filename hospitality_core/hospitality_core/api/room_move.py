@@ -6,12 +6,16 @@ from hospitality_core.hospitality_core.api.reservation import check_availability
 def process_room_move(reservation_name, new_room):
     """
     Moves a checked-in guest to a new room.
-    1. Validate New Room availability.
-    2. Mark Old Room 'Dirty'.
-    3. Mark New Room 'Occupied'.
-    4. Update Reservation and Folio.
+    1. Validate permissions.
+    2. Validate New Room availability.
+    3. Mark Old Room 'Dirty'.
+    4. Mark New Room 'Occupied'.
+    5. Update Reservation and Folio.
     """
     
+    if not (frappe.has_role("Frontdesk Supervisor") or frappe.session.user == "Administrator"):
+        frappe.throw(_("Access Denied. Only Frontdesk Supervisors can move rooms."))
+
     res = frappe.get_doc("Hotel Reservation", reservation_name)
     
     if res.status != "Checked In":
@@ -33,10 +37,8 @@ def process_room_move(reservation_name, new_room):
     # New Room -> Occupied
     frappe.db.set_value("Hotel Room", new_room, "status", "Occupied")
 
-    # 3. Update Documents
-    # Update Reservation
-    res.room = new_room
-    res.save(ignore_permissions=True)
+    # 3. Update Documents (Bypass set_only_once restriction)
+    res.db_set("room", new_room)
     
     # Update Folio
     if res.folio:

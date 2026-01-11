@@ -68,6 +68,7 @@
             "default": "0",
             "fieldname": "is_void",
             "fieldtype": "Check",
+            "in_list_view": 1,
             "label": "Void"
         },
         {
