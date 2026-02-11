@@ -5,6 +5,8 @@ app_description = "Hotel Management Module"
 app_email = "braimahgifted@gmail.com"
 app_license = "gpl-2.0"
 
+required_apps = ["frappe/erpnext"]
+
 # Document Events
 doc_events = {
     "Guest Folio": {
